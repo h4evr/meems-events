@@ -1,4 +1,7 @@
+/*global define*/
 define(function () {
+    "use strict";
+
     var DomEvents = (function () {
         var hasAddEventListener = 'addEventListener' in window;
         var hasAttachEvent = 'attachEvent' in window;
@@ -35,20 +38,20 @@ define(function () {
     
     
     function EventHandler() {
-        this._handlers = {};
+        this.$handlers = {};
         return this;
     }
     
     EventHandler.prototype = {
         on : function (eventName, fn) {
-            this._handlers[eventName] = this._handlers[eventName] || [];
-            this._handlers[eventName].push(fn);
+            this.$handlers[eventName] = this.$handlers[eventName] || [];
+            this.$handlers[eventName].push(fn);
             return this;
         },
         
         off : function (eventName, fn)  {
-            if (this._handlers[eventName] !== undefined) {
-                this._handlers[eventName] = this._handlers[eventName].filter(function (element) {
+            if (this.$handlers[eventName] !== undefined) {
+                this.$handlers[eventName] = this.$handlers[eventName].filter(function (element) {
                     return element !== fn;
                 });
             }
@@ -56,7 +59,7 @@ define(function () {
         },
         
         fire : function (eventName/*, args ...*/) {
-            var handlers = this._handlers[eventName] || [];
+            var handlers = this.$handlers[eventName] || [];
             
             for (var i = 0; i < handlers.length; ++i) {
                 handlers[i].apply(this, arguments);
