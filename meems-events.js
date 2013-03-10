@@ -2,6 +2,32 @@
 define(function () {
     "use strict";
 
+    var touchStartEventName, touchEndEventName, touchMoveEventName,
+        getCursorPosition;
+
+    if ('ontouchstart' in window) {
+        touchStartEventName = 'touchstart';
+        touchMoveEventName = 'touchmove';
+        touchEndEventName = 'touchend';
+        getCursorPosition = function (e) {
+            return {
+                x : e.touches[0].pageX,
+                y : e.touches[0].pageY
+            };
+        };
+    } else {
+        touchStartEventName = 'mousedown';
+        touchMoveEventName = 'mousemove';
+        touchEndEventName = 'mouseup';
+        getCursorPosition = function (e) {
+            return {
+                x : e.pageX,
+                y : e.pageY
+            };
+        };
+    }
+
+
     var DomEvents = (function () {
         var hasAddEventListener = 'addEventListener' in window;
         var hasAttachEvent = 'attachEvent' in window;
@@ -32,11 +58,10 @@ define(function () {
         
         return {
             on: hasAddEventListener ? addfn1 : (hasAttachEvent ? addfn2 : addfn3),
-            off: hasAddEventListener ? rmfn1 : (hasAttachEvent ? rmfn2 : rmfn3),
+            off: hasAddEventListener ? rmfn1 : (hasAttachEvent ? rmfn2 : rmfn3)
         };
     }());
-    
-    
+
     function EventHandler() {
         this.$handlers = {};
         return this;
@@ -62,17 +87,22 @@ define(function () {
             var handlers = this.$handlers[eventName] || [];
             
             for (var i = 0; i < handlers.length; ++i) {
-                handlers[i].apply(this, arguments);
+                if (handlers[i].apply(this, arguments)) {
+                    break;
+                }
             }
             
             return this;
         }
     };
-    
-    
+
     var Events = {
         Dom: DomEvents,
-        Handler: EventHandler
+        Handler: EventHandler,
+        touchStartEventName : touchStartEventName,
+        touchEndEventName : touchEndEventName,
+        touchMoveEventName : touchMoveEventName,
+        getCursorPosition : getCursorPosition
     };
     
     return Events;
