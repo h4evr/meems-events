@@ -31,12 +31,72 @@ define(function () {
         };
     }
 
+    var $domEvents = {};
+    var $elToCallbacks = {};
+    var $takenOver = null;
+
+    /**
+     * Generic handler for all DOM events.
+     *
+     * @method onDomEvent
+     * @private
+     * @param {String} eventName The name of the event.
+     * @param {Event} e The event object.
+     */
+    var onDomEvent = function (eventName, e) {
+        if ($domEvents[eventName] === undefined) {
+            return;
+        }
+
+        var elements = $domEvents[eventName],
+            target = e.target,
+            i, ln, el,
+            callbacks, j, ln2;
+
+        if ($takenOver && eventName === $takenOver[0]) {
+            el = $takenOver[1];
+
+            while (target) {
+                if (target === el) {
+                    $takenOver[2](e);
+                    $takenOver = null;
+                    return;
+                }
+
+                target = target.parentNode;
+            }
+        } else {
+            while (target) {
+                for (i = 0, ln = elements.length; i < ln; ++i) {
+                    el = elements[i];
+
+                    if (el === target) {
+                        callbacks = $elToCallbacks[eventName][i];
+
+                        for (j = 0, ln2 = callbacks.length; j < ln2; ++j) {
+                            if (callbacks[j](e) === false) {
+                                break;
+                            }
+                        }
+
+                        // Found element, stop searching.
+                        return;
+                    }
+                }
+
+                target = target.parentNode;
+            }
+        }
+    };
+
     /**
      * Provides functions to add and remove event listeners to the DOM.
-     * @class DomEvents
+     *
+     * @class NativeDomEvents
+     * @private
      * @constructor
      */
-    var DomEvents = (function () {
+    var NativeDomEvents = (function () {
         var hasAddEventListener = 'addEventListener' in window;
         var hasAttachEvent = 'attachEvent' in window;
 
@@ -60,7 +120,7 @@ define(function () {
             el.detachEvent('on' + event, fn);
         }
 
-        function rmfn3(el, event, fn) {
+        function rmfn3(el, event) {
             el['on' + event] = null;
         }
 
@@ -84,6 +144,91 @@ define(function () {
             off: hasAddEventListener ? rmfn1 : (hasAttachEvent ? rmfn2 : rmfn3)
         };
     }());
+
+
+    /**
+     * Provides functions to add and remove event listeners to the DOM.
+     * @class DomEvents
+     * @constructor
+     */
+    var DomEvents = {
+        /**
+         * Add an event listener to a DOM element.
+         * @method on
+         * @param {HTMLElement} el The element to add the listener to.
+         * @param {String} event The event name.
+         * @param {Function} fn The callback function for when the event occurs.
+         */
+        on: function (el, event, fn) {
+            if ($domEvents[event] === undefined) {
+                NativeDomEvents.on(document, event, (function (eventName) {
+                    return function (e) {
+                        return onDomEvent(eventName, e);
+                    };
+                }(event)));
+
+                $domEvents[event] = [ el ];
+                $elToCallbacks[event] = [ [ fn ] ];
+
+            } else {
+                var els = $domEvents[event];
+                var index = -1;
+
+                for (var i = 0, ln = els.length; i < ln; ++i) {
+                    if (els[i] === el) {
+                        index = i;
+                        break;
+                    }
+                }
+
+                if (index === -1) {
+                    els.push(el);
+                    $elToCallbacks[event].push([ fn ]);
+                } else {
+                    $elToCallbacks[event][index].push(fn);
+                }
+            }
+        },
+
+        /**
+         * Remove an event listener from a DOM element.
+         *
+         * @method off
+         * @param {HTMLElement} el The element to remove the listener from.
+         * @param {String} event The event name.
+         * @param {Function} fn The callback function that was previously added.
+         */
+        off: function (el, event, fn) {
+            if ($domEvents[event] !== undefined) {
+                var els = $domEvents[event], cb;
+
+                for (var i = 0, ln = els.length; i < ln; ++i) {
+                    if (els[i] === el) {
+                        cb = $elToCallbacks[i];
+
+                        for (var j = 0, ln2 = cb.length; j < ln2; ++j) {
+                            if (cb[j] === fn) {
+                                cb.splice(j, 1);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        },
+
+        /**
+         * Enables a handler to take over an event, being the only handler to be called.
+         *
+         * @method takeOver
+         * @param {HTMLElement} el The element that will intercept.
+         * @param {String} event The event name to take over.
+         * @param {Function} fn The callback function.
+         */
+        takeOver: function (el, event, fn) {
+            $takenOver = [event, el, fn];
+        }
+    }
 
     /**
      * Class that enables an object to act as an event handler.
