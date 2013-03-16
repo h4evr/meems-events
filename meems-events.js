@@ -33,7 +33,8 @@ define(function () {
 
     /**
      * Provides functions to add and remove event listeners to the DOM.
-     * @constructor module:meems-events#DomEvents
+     * @class DomEvents
+     * @constructor
      */
     var DomEvents = (function () {
         var hasAddEventListener = 'addEventListener' in window;
@@ -66,8 +67,8 @@ define(function () {
         return {
             /**
              * Add an event listener to a DOM element.
-             * @function module:meems-events#DomEvents.on
-             * @param {DOMElement} el The element to add the listener to.
+             * @method on
+             * @param {HTMLElement} el The element to add the listener to.
              * @param {String} event The event name.
              * @param {Function} fn The callback function for when the event occurs.
              */
@@ -75,8 +76,8 @@ define(function () {
 
             /**
              * Remove an event listener from a DOM element.
-             * @function module:meems-events#DomEvents.off
-             * @param {DOMElement} el The element to remove the listener from.
+             * @method off
+             * @param {HTMLElement} el The element to remove the listener from.
              * @param {String} event The event name.
              * @param {Function} fn The callback function that was previously added.
              */
@@ -86,7 +87,8 @@ define(function () {
 
     /**
      * Class that enables an object to act as an event handler.
-     * @constructor module:meems-events#Handler
+     * @class Handler
+     * @constructor
      */
     function Handler() {
         this.$handlers = {};
@@ -96,27 +98,33 @@ define(function () {
     Handler.prototype = {
         /**
          * Listen for an event.
-         * @function module:meems-events#Handler#on
+         *
+         * @method on
          * @param {String} eventName The name of the event.
-         * @param {module:meems-events#Handler~EventListener} fn The callback.
-         * @returns {Handler} this
+         * @param {Function} fn The callback.
+         * @param {String} fn.eventName The name of the event to trigger.
+         * @param {...Mixed} fn.args Extra parameters passed to the fire method.
+         * @chainable
          */
         on : function (eventName, fn) {
-            this._handlers[eventName] = this._handlers[eventName] || [];
-            this._handlers[eventName].push(fn);
+            this.$handlers[eventName] = this.$handlers[eventName] || [];
+            this.$handlers[eventName].push(fn);
             return this;
         },
 
         /**
          * Stop listening for an event.
-         * @function module:meems-events#Handler#off
+         *
+         * @method off
          * @param {String} eventName The name of the event.
-         * @param {module:meems-events#Handler~EventListener} fn The callback.
-         * @returns {Handler} this
+         * @param {Function} fn The callback.
+         * @param {String} fn.eventName The name of the event to trigger.
+         * @param {Mixed} [fn.args]* Extra parameters passed to the fire method.
+         * @chainable
          */
         off : function (eventName, fn)  {
-            if (this._handlers[eventName] !== undefined) {
-                this._handlers[eventName] = this._handlers[eventName].filter(function (element) {
+            if (this.$handlers[eventName] !== undefined) {
+                this.$handlers[eventName] = this.$handlers[eventName].filter(function (element) {
                     return element !== fn;
                 });
             }
@@ -125,10 +133,11 @@ define(function () {
 
         /**
          * Fire an event name, triggering all listeners.
-         * @function module:meems-events#Handler#fire
+         *
+         * @method fire
          * @param {String} eventName The name of the event to trigger.
          * @param {...Mixed} args All extra parameters will be passed to the listeners.
-         * @returns {Handler} this
+         * @chainable
          */
         fire : function (eventName, args) {
             var handlers = this.$handlers[eventName] || [];
@@ -141,28 +150,48 @@ define(function () {
         }
     };
 
-    /**
-     * @callback module:meems-events#Handler~EventListener
-     * @param {String} eventName The name of the event to trigger.
-     * @param {...Mixed} args Extra parameters passed to the {@link module:meems-events#Handler#fire} method.
-     */
-
     var Events = {
         Dom: DomEvents,
         Handler: Handler,
-        /** Event name for when the user starts to press the screen. */
-        touchStartEventName : touchStartEventName,
-        /** Event name for when the user releases a press on the screen. */
-        touchEndEventName : touchEndEventName,
-        /** Event name for when the user moves the finger/cursor on the screen. */
-        touchMoveEventName : touchMoveEventName,
+
         /**
-         * Transforms an MouseMouve or TouchMouve event into an object
-         * with x and y coordinates of the first touch.
-         * @param {*} e The event object
-         * @returns {Object} Object with the x and y coordinates.
+         * @class Touch
          */
-        getCursorPosition : getCursorPosition
+        Touch : {
+            /**
+             * Event name for when the user starts to press the screen.
+             *
+             * @property touchStartEventName
+             * @static
+             * @type String
+             */
+            touchStartEventName : touchStartEventName,
+            /**
+             * Event name for when the user releases a press on the screen.
+             *
+             * @property touchEndEventName
+             * @static
+             * @type String
+             */
+            touchEndEventName : touchEndEventName,
+            /**
+             * Event name for when the user moves the finger/cursor on the screen.
+
+             * @property touchMoveEventName
+             * @static
+             * @type String
+             */
+            touchMoveEventName : touchMoveEventName,
+            /**
+             * Transforms an MouseMouve or TouchMouve event into an object
+             * with x and y coordinates of the first touch.
+             * @method getCursorPosition
+             * @static
+             * @param {*} e The event object
+             * @return {Object} Object with the x and y coordinates.
+             */
+            getCursorPosition : getCursorPosition
+        }
     };
     
     return Events;
